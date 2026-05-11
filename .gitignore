@@ -1,0 +1,67 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+venv/
+env/
+conda/
+site-packages/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Logs
+logs/
+runs/
+wandb/
+tensorboard/
+*.log
+
+# Model weights / checkpoints
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.engine
+*.tflite
+*.h5
+*.pkl
+*.joblib
+checkpoints/
+weights/
+models/
+pretrained/
+outputs/
+results/
+
+# Datasets / large media
+data/
+dataset/
+datasets/
+videos/
+images/
+frames/
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.jpg
+*.jpeg
+*.png
+*.npy
+*.npz
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
