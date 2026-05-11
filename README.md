@@ -1,4 +1,3 @@
-cat > README.md <<'EOF'
 # Intelligent Fall Detection System
 
 An intelligent fall detection and monitoring system based on a two-stage video understanding pipeline. The system combines a lightweight ActionCLIP-based perception module, a Bayesian router, and a FastVLM-based visual-language verification module to detect high-risk fall events while reducing unnecessary large-model inference.
