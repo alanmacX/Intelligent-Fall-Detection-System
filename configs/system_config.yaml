@@ -1,31 +1,26 @@
-# ================= 全局配置 =================
 
-# 1. 路径配置
 paths:
   actionclip_weight: "weights/model_best.pt"
   fastvlm_model: "weights/llava-fastvithd_1.5b_stage3/llava-fastvithd_1.5b_stage3"
   lstm_model: "weights/rhythm_lstm.pth"
 
-# 2. 算法权重配置 (Post-Process)
 weights:
   adl_global: 1.0
   fall_global: 1.0
   micro:
-    bending: 0.65    # 弯腰降权
-    lying: 0.75       # 躺卧降权
-    sitting: 0.75    # 坐下降权
-    slow_fall: 1.9   # 慢摔加权
-    collapse: 1.2    # 晕厥加权
-    motionless: 1.2  # 不动加权
+    bending: 0.65
+    lying: 0.75
+    sitting: 0.75
+    slow_fall: 1.9
+    collapse: 1.2
+    motionless: 1.2
 
-# 3. 阈值配置
 thresholds:
-  safety_margin: 0.15    # 二分类安全边界
-  warning_margin: 0.7    # Top-2 警告边界
-  lstm_anomaly: 0.05     # 节律异常阈值
+  safety_margin: 0.15
+  warning_margin: 0.7
+  lstm_anomaly: 0.05
 
-# 4. API 配置 (DeepSeek)
 api:
-  key: "sk-7b2d1eb79ff84536a6830d2c70a1067b" # ❗填入你的 Key
+  key: "${DEEPSEEK_API_KEY}"
   base_url: "https://api.deepseek.com"
   model: "deepseek-chat"

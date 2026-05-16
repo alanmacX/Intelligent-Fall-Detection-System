@@ -3,7 +3,7 @@ import time
 
 class ExpressionEngine:
     """
-    表达引擎：中英文映射与 iOS 格式化
+    Formats raw events into dashboard/API presentation payloads.
     """
 
     def __init__(self):
@@ -24,7 +24,7 @@ class ExpressionEngine:
         }
 
     def format_event(self, raw_event):
-        """将数据库原始记录转换为 iOS JSON"""
+        """Convert a raw database row into a presentation JSON payload."""
         if not raw_event:
             return {
                 "title": "系统初始化", "risk_level": "low",

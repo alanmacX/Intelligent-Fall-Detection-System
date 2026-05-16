@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Guardian AI Demo</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark"></span>
+        <div>
+          <strong>Guardian AI</strong>
+          <small>Fall Detection</small>
+        </div>
+      </div>
+      <nav>
+        <button class="nav-item active" data-page="video">视频 Demo</button>
+        <button class="nav-item" data-page="monitor">实时监控</button>
+        <button class="nav-item" data-page="feedback">语义反馈</button>
+        <button class="nav-item" data-page="chat">健康咨询</button>
+        <button class="nav-item" data-page="rhythm">节律分析</button>
+        <button class="nav-item" data-page="community">社区响应</button>
+        <button class="nav-item" data-page="settings">设置</button>
+      </nav>
+      <div class="side-status">
+        <span id="apiDot" class="dot"></span>
+        <span id="apiText">Checking API</span>
+      </div>
+    </aside>
+
+    <main class="app">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">ActionCLIP · RhythmMamba · Bayesian Router · FastVLM</p>
+          <h1>真实单视频推理工作台</h1>
+          <p>上传视频，查看从原始模型输出到最终判决的完整链路、延迟和显存指标。</p>
+        </div>
+        <div class="hero-pill">
+          <span class="dot live"></span>
+          <span>Local demo</span>
+        </div>
+      </header>
+
+      <section id="page-video" class="page active">
+        <div class="split">
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>视频输入</h2>
+                <p>选择一个 mp4/mov/avi/mkv 文件，后端会真实调用推理 pipeline。</p>
+              </div>
+            </div>
+            <label class="dropzone" for="videoFile">
+              <input id="videoFile" type="file" accept="video/mp4,video/quicktime,video/x-msvideo,video/x-matroska" />
+              <span>拖入或点击选择视频</span>
+              <small id="fileName">尚未选择文件</small>
+            </label>
+            <video id="preview" class="preview" controls hidden></video>
+            <div class="control-row">
+              <label><input id="forceVlm" type="checkbox" /> 强制 FastVLM</label>
+              <label><input id="persistResult" type="checkbox" checked /> 写入数据库</label>
+            </div>
+            <button id="runBtn" class="primary">开始推理</button>
+            <div id="runState" class="hint">等待视频输入。</div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>最终判决</h2>
+                <p>核心输出会在推理完成后即时刷新。</p>
+              </div>
+            </div>
+            <div id="summaryGrid" class="metric-grid">
+              <article><label>最终判决</label><strong>-</strong><span>no run</span></article>
+              <article><label>路由</label><strong>-</strong><span>pending</span></article>
+              <article><label>总延迟</label><strong>-</strong><span>end to end</span></article>
+              <article><label>显存峰值</label><strong>-</strong><span>CUDA peak</span></article>
+            </div>
+            <div id="vlmText" class="text-box">推理完成后显示 FastVLM 文本或端侧解释。</div>
+          </section>
+        </div>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>性能分解</h2>
+              <p>端到端延迟、阶段耗时和 CUDA 显存占用。</p>
+            </div>
+            <strong id="totalLatency" class="panel-stat">-</strong>
+          </div>
+          <div id="perfBreakdown" class="perf-list"></div>
+        </section>
+
+        <div class="split lower">
+          <section class="panel">
+            <div class="panel-head"><h2>判决链路</h2></div>
+            <div id="timeline" class="timeline"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h2>12 类概率</h2></div>
+            <div id="probBars" class="bars"></div>
+          </section>
+        </div>
+
+        <section class="panel">
+          <details>
+            <summary>完整 Debug JSON</summary>
+            <pre id="debugJson">{}</pre>
+          </details>
+        </section>
+      </section>
+
+      <section id="page-monitor" class="page">
+        <div class="split">
+          <section class="panel">
+            <div class="panel-head"><h2>实时状态</h2><button id="refreshMonitor">刷新</button></div>
+            <div id="latestEvent" class="status-card">等待数据。</div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h2>推理指标</h2></div>
+            <div id="metricsGrid" class="metric-grid"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="page-feedback" class="page">
+        <section class="panel">
+          <div class="panel-head"><h2>语义反馈</h2><button id="loadEvents">加载事件</button></div>
+          <select id="eventSelect"></select>
+          <button id="generateFeedback" class="primary">生成反馈</button>
+          <div id="feedbackResult" class="text-box"></div>
+        </section>
+      </section>
+
+      <section id="page-chat" class="page">
+        <section class="panel chat-panel">
+          <div class="panel-head"><h2>健康咨询</h2><button id="clearChat">清空</button></div>
+          <div id="chatLog" class="chat-log"></div>
+          <form id="chatForm" class="chat-form">
+            <input id="chatInput" placeholder="问问最近节律、跌倒风险或历史事件..." />
+            <button class="primary">发送</button>
+          </form>
+        </section>
+      </section>
+
+      <section id="page-rhythm" class="page">
+        <section class="panel">
+          <div class="panel-head"><h2>节律惊奇度</h2><button id="refreshRhythm">刷新</button></div>
+          <div id="rhythmChart" class="line-chart"></div>
+        </section>
+      </section>
+
+      <section id="page-community" class="page">
+        <section class="panel">
+          <div class="panel-head"><h2>社区响应</h2><button id="loadCommunity">刷新</button></div>
+          <div id="communityList" class="event-list"></div>
+        </section>
+      </section>
+
+      <section id="page-settings" class="page">
+        <section class="panel">
+          <div class="panel-head"><h2>API 设置</h2></div>
+          <form id="settingsForm" class="settings-form">
+            <label>API Key<input id="apiKey" type="password" placeholder="留空则不覆盖" /></label>
+            <label>Base URL<input id="baseUrl" /></label>
+            <label>Model<input id="modelName" /></label>
+            <label>Temperature<input id="temperature" type="number" step="0.05" min="0" max="1" /></label>
+            <button class="primary">保存</button>
+          </form>
+          <div id="settingsResult" class="hint"></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

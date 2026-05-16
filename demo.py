@@ -12,7 +12,6 @@ from torchvision import transforms
 from dotmap import DotMap
 
 # ==============================================================================
-# 1. 路径配置
 # ==============================================================================
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 LIB_DIR = os.path.join(CURRENT_DIR, "lib")
@@ -42,7 +41,6 @@ except ImportError:
     logging.warning("⚠️ 警告: 无法导入 FastVLM")
 
 # ==============================================================================
-# 2. 常量定义
 # ==============================================================================
 CLASSES = [
     "A video of a person bending down with control to pick up something.",
@@ -69,18 +67,17 @@ CLASS_LABELS = [
 FALL_IDXS = [6, 7, 8, 9, 10, 11]
 
 
-# 🔥🔥🔥 Router 结构修正 (与 train_router_balanced.py 保持 100% 一致) 🔥🔥🔥
 class LiteRouter(nn.Module):
     def __init__(self, input_dim=514, hidden_dim=256):
         super(LiteRouter, self).__init__()
         self.net = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),  # 0
             nn.ReLU(),  # 1
-            nn.Dropout(0.4),  # 2 (训练时加大的 Dropout)
+            nn.Dropout(0.4),
             nn.Linear(hidden_dim, 64),  # 3
             nn.ReLU(),  # 4
-            nn.Dropout(0.2),  # 5 (⚠️ 必须加上这一层，否则索引对不上)
-            nn.Linear(64, 1),  # 6 (权重位置)
+            nn.Dropout(0.2),
+            nn.Linear(64, 1),
             nn.Sigmoid()  # 7
         )
 
@@ -89,7 +86,6 @@ class LiteRouter(nn.Module):
 
 
 # ==============================================================================
-# 3. 核心引擎
 # ==============================================================================
 class GuardianCognition:
     def __init__(self):
@@ -101,7 +97,6 @@ class GuardianCognition:
         self.router_path = os.path.join(CURRENT_DIR, "weights/router_best.pth")
         self.vlm_path = os.path.join(CURRENT_DIR, "weights/llava-fastvithd_1.5b_stage3/llava-fastvithd_1.5b_stage3")
 
-        # --- 1. 加载 ActionCLIP ---
         print("   ├── 1. 加载 ActionCLIP...")
         if os.path.exists(self.config_path):
             with open(self.config_path, 'r') as f:
@@ -109,7 +104,8 @@ class GuardianCognition:
         else:
             self.config = DotMap({"network": {"arch": "ViT-B/16", "sim_header": "Transf"}, "data": {"num_segments": 8}})
 
-        self.clip_model, clip_state_dict = clip.load(self.config.network.arch, device=self.device, jit=False)
+        clip_source = self.ac_weights if os.path.exists(self.ac_weights) else self.config.network.arch
+        self.clip_model, clip_state_dict = clip.load(clip_source, device=self.device, jit=False)
         self.clip_model.eval()
         self.fusion_model = visual_prompt(
             self.config.network.sim_header, clip_state_dict=clip_state_dict, T=self.config.data.num_segments
@@ -123,8 +119,10 @@ class GuardianCognition:
                 return {k.replace('module.', ''): v for k, v in d.items()}
 
             sd = rm_pfx(checkpoint['model_state_dict']) if 'model_state_dict' in checkpoint else rm_pfx(checkpoint)
-            self.fusion_model.load_state_dict(sd, strict=False)
+            fusion_sd = checkpoint.get('fusion_model_state_dict') if isinstance(checkpoint, dict) else None
             self.clip_model.load_state_dict(sd, strict=False)
+            if fusion_sd is not None:
+                self.fusion_model.load_state_dict(rm_pfx(fusion_sd), strict=False)
         else:
             print("   ❌ ActionCLIP权重缺失")
 
@@ -138,7 +136,6 @@ class GuardianCognition:
             transforms.Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711))
         ])
 
-        # --- 2. 加载 Router ---
         print("   ├── 2. 加载 Router...")
         self.router = LiteRouter(input_dim=514).to(self.device)
         self.router.eval()
@@ -153,7 +150,6 @@ class GuardianCognition:
             print("   │   ⚠️ 文件不存在")
             self.router = None
 
-        # --- 3. 加载 FastVLM ---
         print("   └── 3. 加载 FastVLM...")
         self.vlm_model = None
         if os.path.exists(self.vlm_path):
@@ -188,7 +184,6 @@ class GuardianCognition:
             probs = (100.0 * video_features @ self.text_features.T).softmax(dim=-1).float().cpu().numpy()[0]
 
         if return_features:
-            # 实时计算特征拼接
             probs_safe = np.clip(probs, 1e-7, 1.0)
             probs_safe = probs_safe / np.sum(probs_safe)
             entropy = -np.sum(probs_safe * np.log(probs_safe))
@@ -220,7 +215,6 @@ class GuardianCognition:
         mean_pred = mc_outputs.mean().item()
         uncertainty = mc_outputs.std().item()
 
-        # 🔥 [激进策略] 直接用不确定性加分，去掉门控
         risk_sensitivity = 3.0
         final_score = mean_pred + (risk_sensitivity * uncertainty)
         final_score = min(max(final_score, 0.0), 1.0)
@@ -315,9 +309,8 @@ def load_frames(video_path, num_frames=8):
 
 
 def main():
-    # 🔥🔥🔥 修改这里 🔥🔥🔥
     VIDEO_PATH = "/home/alanmac/fall/ActionCLIP/5.MP4"
-    ROUTER_THRESH = 0.3  # 激进模式建议 0.3
+    ROUTER_THRESH = 0.3
     # 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
 
     print("\n" + "=" * 60)
@@ -351,7 +344,6 @@ def main():
     should_route = False
 
     if engine.router:
-        # 贝叶斯路由
         final_score, uncertainty, raw_pred = engine.bayesian_route(feats, samples=20)
         should_route = final_score > ROUTER_THRESH
 

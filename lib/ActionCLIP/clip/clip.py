@@ -110,6 +110,10 @@ def load(name: str, device: Union[str, torch.device] = "cuda" if torch.cuda.is_a
             warnings.warn(f"File {model_path} is not a JIT archive. Loading as a state dict instead")
             jit = False
         state_dict = torch.load(model_path, map_location="cpu")
+        if isinstance(state_dict, dict) and "model_state_dict" in state_dict:
+            state_dict = state_dict["model_state_dict"]
+        if isinstance(state_dict, dict):
+            state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
 
     if not jit:
 

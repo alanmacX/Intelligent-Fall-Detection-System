@@ -12,7 +12,6 @@ data:
     num_classes: 12
     image_tmpl: 'img_{:05d}.jpg'
 
-    # 路径保持你的相对路径
     train_list: '../fall_dataset/list_12/train_list.txt'
     val_list:   '../fall_dataset/list_12/val_list.txt'
     label_list: '../fall_dataset/list_12/label_list.csv'
@@ -24,12 +23,11 @@ data:
 
 network:
     type: clip
-    arch: ViT-B/16        # 必须匹配预训练模型
+    arch: ViT-B/16
     init: True
     tsm: False
     drop_path_rate: 0.0
 
-    # [关键] 必须是 Transf 才能加载那个 .pt 权重
     sim_header: "Transf"
 
     joint: False
@@ -53,9 +51,8 @@ solver:
     loss_type: nll
     eval_freq: 1
 
-    # 👇👇👇 [关键修复] 补上这两行 👇👇👇
-    ratio: 1              # 视觉编码器的学习率倍率
-    f_ratio: 10           # 时序融合模块的学习率倍率 (通常大一点)
+    ratio: 1
+    f_ratio: 10
 
 logging:
     print_freq: 10
